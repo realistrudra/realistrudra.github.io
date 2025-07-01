@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AfterDusk QR Entry Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.10/minified/html5-qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0f0f0f;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding-top: 40px;
+      height: 100vh;
+    }
+    #reader {
+      width: 90vw;
+      max-width: 400px;
+      margin: 20px auto;
+    }
+    #output {
+      margin-top: 20px;
+      padding: 30px;
+      border-radius: 20px;
+      font-size: 26px;
+      font-weight: bold;
+      text-align: center;
+      display: none;
+    }
+    .vip {
+      background-color: #00ff99;
+      color: #0f0f0f;
+    }
+    .standard {
+      background-color: #00bfff;
+      color: #0f0f0f;
+    }
+    .invalid {
+      background-color: #ff4444;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <h2>🎫 AfterDusk QR Entry Scanner</h2>
+  <div id="reader"></div>
+  <div id="output"></div>
+
+  <script>
+    const vipCodes = new Set(Array.from({ length: 20 }, (_, i) => `RNV-VIP-${String(i + 1).padStart(2, '0')}`));
+    const standardCodes = new Set(Array.from({ length: 50 }, (_, i) => `RNV-STD-${String(i + 1).padStart(2, '0')}`));
+
+    const output = document.getElementById('output');
+
+    function handleScan(code) {
+      const cleanCode = code.trim().toUpperCase();
+      output.style.display = 'block';
+
+      if (vipCodes.has(cleanCode)) {
+        output.textContent = `✅ VIP ENTRY\n${cleanCode}`;
+        output.className = 'vip';
+      } else if (standardCodes.has(cleanCode)) {
+        output.textContent = `🎟️ Standard Entry\n${cleanCode}`;
+        output.className = 'standard';
+      } else {
+        output.textContent = `❌ Invalid Code\n${cleanCode}`;
+        output.className = 'invalid';
+      }
+    }
+
+    const html5QrCode = new Html5Qrcode("reader");
+    Html5Qrcode.getCameras().then(cameras => {
+      if (cameras && cameras.length) {
+        html5QrCode.start(
+          cameras[0].id,
+          { fps: 10, qrbox: 250 },
+          decodedText => {
+            html5QrCode.stop();
+            handleScan(decodedText);
+            setTimeout(() => {
+              html5QrCode.start(cameras[0].id, { fps: 10, qrbox: 250 }, decodedText => {
+                html5QrCode.stop();
+                handleScan(decodedText);
+              });
+            }, 2000);
+          },
+          errorMessage => {}
+        );
+      }
+    }).catch(err => console.error(err));
+  </script>
+</body>
+</html>
